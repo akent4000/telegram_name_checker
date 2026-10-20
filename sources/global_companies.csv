@@ -1,0 +1,829 @@
+company,aliases,source
+Apple,apple,curated starter list
+Microsoft,microsoft,curated starter list
+NVIDIA,nvidia,curated starter list
+Alphabet,alphabet;google,curated starter list
+Amazon,amazon,curated starter list
+Meta Platforms,meta;facebook;instagram;whatsapp,curated starter list
+Tesla,tesla,curated starter list
+Berkshire Hathaway,berkshire,curated starter list
+Broadcom,broadcom,curated starter list
+Oracle,oracle,curated starter list
+Netflix,netflix,curated starter list
+Adobe,adobe,curated starter list
+Salesforce,salesforce,curated starter list
+ServiceNow,servicenow,curated starter list
+IBM,ibm,curated starter list
+Intel,intel,curated starter list
+AMD,amd,curated starter list
+Qualcomm,qualcomm,curated starter list
+Cisco,cisco,curated starter list
+Dell Technologies,dell,curated starter list
+HP,hp,curated starter list
+Hewlett Packard Enterprise,hpe,curated starter list
+Palantir,palantir,curated starter list
+Snowflake,snowflake,curated starter list
+Databricks,databricks,curated starter list
+OpenAI,openai,curated starter list
+Anthropic,anthropic,curated starter list
+xAI,xai,curated starter list
+Perplexity,perplexity,curated starter list
+Mistral AI,mistral,curated starter list
+Cohere,cohere,curated starter list
+Hugging Face,huggingface,curated starter list
+Scale AI,scaleai,curated starter list
+CoreWeave,coreweave,curated starter list
+SpaceX,spacex;starlink,curated starter list
+Blue Origin,blueorigin,curated starter list
+Stripe,stripe,curated starter list
+PayPal,paypal,curated starter list
+Block,block;square;cashapp,curated starter list
+Coinbase,coinbase,curated starter list
+Robinhood,robinhood,curated starter list
+Bloomberg,bloomberg,curated starter list
+Discord,discord,curated starter list
+Reddit,reddit,curated starter list
+Pinterest,pinterest,curated starter list
+Snap,snap;snapchat,curated starter list
+Spotify,spotify,curated starter list
+Dropbox,dropbox,curated starter list
+Box,box,curated starter list
+Zoom,zoom,curated starter list
+Slack,slack,curated starter list
+Notion,notion,curated starter list
+Figma,figma,curated starter list
+Canva,canva,curated starter list
+Atlassian,atlassian,curated starter list
+GitHub,github,curated starter list
+GitLab,gitlab,curated starter list
+JetBrains,jetbrains,curated starter list
+Cloudflare,cloudflare,curated starter list
+Akamai,akamai,curated starter list
+CrowdStrike,crowdstrike,curated starter list
+Palo Alto Networks,paloalto,curated starter list
+Fortinet,fortinet,curated starter list
+Zscaler,zscaler,curated starter list
+Okta,okta,curated starter list
+SentinelOne,sentinelone,curated starter list
+Datadog,datadog,curated starter list
+MongoDB,mongodb,curated starter list
+Elastic,elastic,curated starter list
+Confluent,confluent,curated starter list
+HashiCorp,hashicorp,curated starter list
+Docker,docker,curated starter list
+Vercel,vercel,curated starter list
+Netlify,netlify,curated starter list
+DigitalOcean,digitalocean,curated starter list
+Twilio,twilio,curated starter list
+Unity,unity,curated starter list
+Epic Games,epicgames,curated starter list
+Valve,valve;steam,curated starter list
+Roblox,roblox,curated starter list
+Electronic Arts,ea,curated starter list
+Take Two Interactive,taketwo,curated starter list
+Riot Games,riotgames,curated starter list
+Ubisoft,ubisoft,curated starter list
+Bungie,bungie,curated starter list
+Niantic,niantic,curated starter list
+AppLovin,applovin,curated starter list
+Duolingo,duolingo,curated starter list
+Coursera,coursera,curated starter list
+Udemy,udemy,curated starter list
+Grammarly,grammarly,curated starter list
+Automattic,automattic;wordpress,curated starter list
+Wix,wix,curated starter list
+Squarespace,squarespace,curated starter list
+GoDaddy,godaddy,curated starter list
+Namecheap,namecheap,curated starter list
+Hostinger,hostinger,curated starter list
+Proton,proton,curated starter list
+Signal,signal,curated starter list
+Telegram,telegram,curated starter list
+Uber,uber,curated starter list
+Lyft,lyft,curated starter list
+Airbnb,airbnb,curated starter list
+Booking Holdings,booking;priceline;kayak,curated starter list
+Expedia,expedia,curated starter list
+Tripadvisor,tripadvisor,curated starter list
+DoorDash,doordash,curated starter list
+Instacart,instacart,curated starter list
+eBay,ebay,curated starter list
+Etsy,etsy,curated starter list
+Shopify,shopify,curated starter list
+Walmart,walmart,curated starter list
+Costco,costco,curated starter list
+Target,target,curated starter list
+Home Depot,homedepot,curated starter list
+Lowes,lowes,curated starter list
+Best Buy,bestbuy,curated starter list
+Wayfair,wayfair,curated starter list
+Chewy,chewy,curated starter list
+Nike,nike,curated starter list
+Adidas,adidas,curated starter list
+Puma,puma,curated starter list
+Under Armour,underarmour,curated starter list
+Lululemon,lululemon,curated starter list
+New Balance,newbalance,curated starter list
+Skechers,skechers,curated starter list
+Crocs,crocs,curated starter list
+Deckers,deckers;ugg;hoka,curated starter list
+Levi Strauss,levis,curated starter list
+Gap,gap,curated starter list
+LVMH,lvmh;louisvuitton;dior;fendi,curated starter list
+Hermes,hermes,curated starter list
+Kering,kering;gucci;balenciaga,curated starter list
+Chanel,chanel,curated starter list
+Prada,prada,curated starter list
+Burberry,burberry,curated starter list
+Moncler,moncler,curated starter list
+Richemont,richemont;cartier,curated starter list
+Rolex,rolex,curated starter list
+Swatch Group,swatch;omega,curated starter list
+Inditex,inditex;zara,curated starter list
+Hennes and Mauritz,hm,curated starter list
+Fast Retailing,fastretailing;uniqlo,curated starter list
+Shein,shein,curated starter list
+Primark,primark,curated starter list
+IKEA,ikea,curated starter list
+Lego,lego,curated starter list
+Mattel,mattel,curated starter list
+Hasbro,hasbro,curated starter list
+Walt Disney,disney;pixar;marvel,curated starter list
+Warner Bros Discovery,warnerbros;hbo,curated starter list
+Comcast,comcast;nbcuniversal,curated starter list
+Paramount,paramount,curated starter list
+Sony,sony;playstation,curated starter list
+Nintendo,nintendo,curated starter list
+Sega,sega,curated starter list
+Capcom,capcom,curated starter list
+Konami,konami,curated starter list
+Bandai Namco,bandainamco,curated starter list
+Square Enix,squareenix,curated starter list
+Nexon,nexon,curated starter list
+Krafton,krafton,curated starter list
+NetEase,netease,curated starter list
+Tencent,tencent;wechat,curated starter list
+Alibaba,alibaba;aliexpress,curated starter list
+ByteDance,bytedance;tiktok;douyin,curated starter list
+Baidu,baidu,curated starter list
+JD.com,jd,curated starter list
+PDD Holdings,pdd;pinduoduo;temu,curated starter list
+Meituan,meituan,curated starter list
+Kuaishou,kuaishou,curated starter list
+Bilibili,bilibili,curated starter list
+Weibo,weibo,curated starter list
+Xiaohongshu,xiaohongshu;rednote,curated starter list
+Didi,didi,curated starter list
+Trip.com,tripcom;ctrip,curated starter list
+Xiaomi,xiaomi;redmi,curated starter list
+Huawei,huawei,curated starter list
+Honor,honor,curated starter list
+Oppo,oppo,curated starter list
+Vivo,vivo,curated starter list
+OnePlus,oneplus,curated starter list
+Realme,realme,curated starter list
+Lenovo,lenovo,curated starter list
+ZTE,zte,curated starter list
+DJI,dji,curated starter list
+Haier,haier,curated starter list
+Midea,midea,curated starter list
+Gree,gree,curated starter list
+Hisense,hisense,curated starter list
+TCL,tcl,curated starter list
+BYD,byd,curated starter list
+Geely,geely,curated starter list
+Chery,chery,curated starter list
+SAIC Motor,saic,curated starter list
+Great Wall Motor,greatwall;haval,curated starter list
+NIO,nio,curated starter list
+XPeng,xpeng,curated starter list
+Li Auto,liauto,curated starter list
+CATL,catl,curated starter list
+TSMC,tsmc,curated starter list
+MediaTek,mediatek,curated starter list
+Foxconn,foxconn,curated starter list
+ASUS,asus,curated starter list
+Acer,acer,curated starter list
+MSI,msi,curated starter list
+Gigabyte,gigabyte,curated starter list
+Samsung,samsung,curated starter list
+SK Hynix,skhynix,curated starter list
+LG,lg,curated starter list
+Hyundai,hyundai,curated starter list
+Kia,kia,curated starter list
+POSCO,posco,curated starter list
+Naver,naver,curated starter list
+Kakao,kakao,curated starter list
+Coupang,coupang,curated starter list
+Toyota,toyota;lexus,curated starter list
+Honda,honda;acura,curated starter list
+Nissan,nissan;infiniti,curated starter list
+Mazda,mazda,curated starter list
+Subaru,subaru,curated starter list
+Suzuki,suzuki,curated starter list
+Mitsubishi,mitsubishi,curated starter list
+Yamaha,yamaha,curated starter list
+Kawasaki,kawasaki,curated starter list
+Panasonic,panasonic,curated starter list
+Hitachi,hitachi,curated starter list
+Toshiba,toshiba,curated starter list
+Fujitsu,fujitsu,curated starter list
+NEC,nec,curated starter list
+Canon,canon,curated starter list
+Nikon,nikon,curated starter list
+Olympus,olympus,curated starter list
+Fujifilm,fujifilm,curated starter list
+Seiko,seiko,curated starter list
+Casio,casio,curated starter list
+Citizen,citizen,curated starter list
+Keyence,keyence,curated starter list
+Fanuc,fanuc,curated starter list
+Daikin,daikin,curated starter list
+SoftBank,softbank,curated starter list
+Rakuten,rakuten,curated starter list
+NTT,ntt,curated starter list
+KDDI,kddi,curated starter list
+Recruit,recruit;indeed;glassdoor,curated starter list
+Mitsui,mitsui,curated starter list
+Itochu,itochu,curated starter list
+Sumitomo,sumitomo,curated starter list
+MUFG,mufg,curated starter list
+SMFG,smfg,curated starter list
+Mizuho,mizuho,curated starter list
+Nomura,nomura,curated starter list
+Takeda,takeda,curated starter list
+Astellas,astellas,curated starter list
+Daiichi Sankyo,daiichisankyo,curated starter list
+Otsuka,otsuka,curated starter list
+Shiseido,shiseido,curated starter list
+Kao,kao,curated starter list
+Uni Charm,unicharm,curated starter list
+Ajinomoto,ajinomoto,curated starter list
+Kikkoman,kikkoman,curated starter list
+Seven and I Holdings,seveneleven,curated starter list
+Volkswagen,volkswagen;vw,curated starter list
+BMW,bmw,curated starter list
+Mercedes Benz,mercedes,curated starter list
+Porsche,porsche,curated starter list
+Audi,audi,curated starter list
+Renault,renault,curated starter list
+Stellantis,stellantis;peugeot;citroen;fiat;jeep,curated starter list
+Ferrari,ferrari,curated starter list
+Lamborghini,lamborghini,curated starter list
+Volvo,volvo,curated starter list
+Polestar,polestar,curated starter list
+Aston Martin,astonmartin,curated starter list
+Jaguar Land Rover,jaguar;landrover,curated starter list
+Ford,ford,curated starter list
+General Motors,gm;chevrolet;cadillac,curated starter list
+Rivian,rivian,curated starter list
+Lucid,lucid,curated starter list
+Bosch,bosch,curated starter list
+Continental,continental,curated starter list
+Michelin,michelin,curated starter list
+Bridgestone,bridgestone,curated starter list
+Goodyear,goodyear,curated starter list
+Pirelli,pirelli,curated starter list
+Denso,denso,curated starter list
+Magna,magna,curated starter list
+Siemens,siemens,curated starter list
+Schneider Electric,schneider,curated starter list
+ABB,abb,curated starter list
+Alstom,alstom,curated starter list
+SAP,sap,curated starter list
+ASML,asml,curated starter list
+Arm Holdings,arm,curated starter list
+NXP,nxp,curated starter list
+Infineon,infineon,curated starter list
+STMicroelectronics,stmicroelectronics;stm,curated starter list
+Ericsson,ericsson,curated starter list
+Nokia,nokia,curated starter list
+Philips,philips,curated starter list
+Nexperia,nexperia,curated starter list
+Dassault Systemes,dassault,curated starter list
+Capgemini,capgemini,curated starter list
+Accenture,accenture,curated starter list
+Infosys,infosys,curated starter list
+Tata Consultancy Services,tcs,curated starter list
+Wipro,wipro,curated starter list
+HCL Technologies,hcl,curated starter list
+Tech Mahindra,techmahindra,curated starter list
+Reliance Industries,reliance;jio,curated starter list
+Tata Group,tata,curated starter list
+Mahindra,mahindra,curated starter list
+Adani,adani,curated starter list
+Bharti Airtel,airtel,curated starter list
+HDFC Bank,hdfc,curated starter list
+ICICI Bank,icici,curated starter list
+State Bank of India,sbi,curated starter list
+Axis Bank,axisbank,curated starter list
+Kotak Mahindra Bank,kotak,curated starter list
+Bajaj,bajaj,curated starter list
+Maruti Suzuki,maruti,curated starter list
+Titan Company,titan,curated starter list
+Asian Paints,asianpaints,curated starter list
+ITC,itc,curated starter list
+Zomato,zomato,curated starter list
+Swiggy,swiggy,curated starter list
+Flipkart,flipkart,curated starter list
+PhonePe,phonepe,curated starter list
+Paytm,paytm,curated starter list
+Razorpay,razorpay,curated starter list
+Zerodha,zerodha,curated starter list
+Nykaa,nykaa,curated starter list
+Ola,ola,curated starter list
+OYO,oyo,curated starter list
+Zoho,zoho,curated starter list
+Freshworks,freshworks,curated starter list
+MakeMyTrip,makemytrip,curated starter list
+Grab,grab,curated starter list
+Sea Limited,sea;shopee;garena,curated starter list
+GoTo,goto;gojek;tokopedia,curated starter list
+Lazada,lazada,curated starter list
+Bukalapak,bukalapak,curated starter list
+Traveloka,traveloka,curated starter list
+VNG,vng,curated starter list
+Viettel,viettel,curated starter list
+FPT,fpt,curated starter list
+Singtel,singtel,curated starter list
+Singtel Optus,optus,curated starter list
+DBS,dbs,curated starter list
+OCBC,ocbc,curated starter list
+UOB,uob,curated starter list
+Maybank,maybank,curated starter list
+Petronas,petronas,curated starter list
+PTT,ptt,curated starter list
+CP Group,cpgroup,curated starter list
+Astra International,astra,curated starter list
+Telkom Indonesia,telkom,curated starter list
+Jollibee,jollibee,curated starter list
+SM Investments,sminvestments,curated starter list
+San Miguel,sanmiguel,curated starter list
+Ayala,ayala,curated starter list
+BHP,bhp,curated starter list
+Rio Tinto,riotinto,curated starter list
+Fortescue,fortescue,curated starter list
+Woodside Energy,woodside,curated starter list
+Woolworths,woolworths,curated starter list
+Coles,coles,curated starter list
+Wesfarmers,wesfarmers,curated starter list
+Qantas,qantas,curated starter list
+Telstra,telstra,curated starter list
+Commonwealth Bank,commbank,curated starter list
+Westpac,westpac,curated starter list
+ANZ,anz,curated starter list
+National Australia Bank,nab,curated starter list
+Macquarie,macquarie,curated starter list
+Xero,xero,curated starter list
+WiseTech,wisetech,curated starter list
+Cochlear,cochlear,curated starter list
+CSL,csl,curated starter list
+ResMed,resmed,curated starter list
+Fisher and Paykel,fisherpaykel,curated starter list
+Shell,shell,curated starter list
+BP,bp,curated starter list
+TotalEnergies,totalenergies,curated starter list
+ExxonMobil,exxonmobil,curated starter list
+Chevron,chevron,curated starter list
+Saudi Aramco,aramco,curated starter list
+ADNOC,adnoc,curated starter list
+QatarEnergy,qatarenergy,curated starter list
+PetroChina,petrochina,curated starter list
+Sinopec,sinopec,curated starter list
+CNOOC,cnooc,curated starter list
+Petrobras,petrobras,curated starter list
+Equinor,equinor,curated starter list
+Eni,eni,curated starter list
+Repsol,repsol,curated starter list
+OMV,omv,curated starter list
+SLB,slb;schlumberger,curated starter list
+Halliburton,halliburton,curated starter list
+Baker Hughes,bakerhughes,curated starter list
+Glencore,glencore,curated starter list
+Vale,vale,curated starter list
+Anglo American,angloamerican,curated starter list
+Freeport McMoRan,freeport,curated starter list
+Newmont,newmont,curated starter list
+Barrick,barrick,curated starter list
+Maaden,maaden,curated starter list
+SABIC,sabic,curated starter list
+BASF,basf,curated starter list
+Dow,dow,curated starter list
+DuPont,dupont,curated starter list
+Linde,linde,curated starter list
+Air Liquide,airliquide,curated starter list
+Air Products,airproducts,curated starter list
+Bayer,bayer,curated starter list
+Boeing,boeing,curated starter list
+Airbus,airbus,curated starter list
+Lockheed Martin,lockheedmartin,curated starter list
+RTX,rtx;raytheon,curated starter list
+Northrop Grumman,northrop,curated starter list
+General Dynamics,generaldynamics,curated starter list
+BAE Systems,baesystems,curated starter list
+Rolls Royce,rollsroyce,curated starter list
+Safran,safran,curated starter list
+Thales,thales,curated starter list
+Leonardo,leonardo,curated starter list
+Dassault Aviation,dassaultaviation,curated starter list
+GE Aerospace,ge,curated starter list
+Honeywell,honeywell,curated starter list
+Caterpillar,caterpillar,curated starter list
+Deere,johndeere,curated starter list
+CNH Industrial,cnh,curated starter list
+Komatsu,komatsu,curated starter list
+Kubota,kubota,curated starter list
+Cummins,cummins,curated starter list
+Eaton,eaton,curated starter list
+Emerson,emerson,curated starter list
+Rockwell Automation,rockwell,curated starter list
+Parker Hannifin,parker,curated starter list
+Johnson Controls,johnsoncontrols,curated starter list
+Otis,otis,curated starter list
+Kone,kone,curated starter list
+Schindler,schindler,curated starter list
+Holcim,holcim,curated starter list
+Heidelberg Materials,heidelberg,curated starter list
+Saint Gobain,saintgobain,curated starter list
+Vinci,vinci,curated starter list
+Bouygues,bouygues,curated starter list
+ACS,acs,curated starter list
+Ferrovial,ferrovial,curated starter list
+Skanska,skanska,curated starter list
+CRH,crh,curated starter list
+Nestle,nestle;nespresso,curated starter list
+Unilever,unilever,curated starter list
+Procter and Gamble,pg,curated starter list
+Colgate Palmolive,colgate,curated starter list
+Kimberly Clark,kimberlyclark,curated starter list
+Reckitt,reckitt,curated starter list
+Henkel,henkel,curated starter list
+L'Oreal,loreal,curated starter list
+Estee Lauder,esteelauder,curated starter list
+Beiersdorf,beiersdorf;nivea,curated starter list
+Coca Cola,cocacola,curated starter list
+PepsiCo,pepsi;pepsico,curated starter list
+Red Bull,redbull,curated starter list
+Monster Beverage,monster,curated starter list
+Danone,danone,curated starter list
+Kraft Heinz,kraft;heinz,curated starter list
+Mondelez,mondelez;oreo,curated starter list
+Mars,mars,curated starter list
+Ferrero,ferrero;nutella,curated starter list
+Hershey,hershey,curated starter list
+Lindt,lindt,curated starter list
+General Mills,generalmills,curated starter list
+Kellanova,kellanova,curated starter list
+Kellogg,kellogg,curated starter list
+Campbell,campbells,curated starter list
+Conagra,conagra,curated starter list
+Tyson Foods,tyson,curated starter list
+JBS,jbs,curated starter list
+Cargill,cargill,curated starter list
+ADM,adm,curated starter list
+Bunge,bunge,curated starter list
+McDonald's,mcdonalds,curated starter list
+Starbucks,starbucks,curated starter list
+Yum Brands,yum;kfc;pizzahut;tacobell,curated starter list
+Restaurant Brands International,burgerking;timhortons;popeyes,curated starter list
+Domino's Pizza,dominos,curated starter list
+Chipotle,chipotle,curated starter list
+Wendy's,wendys,curated starter list
+Subway,subway,curated starter list
+Dunkin,dunkin,curated starter list
+Heineken,heineken,curated starter list
+AB InBev,abinbev;budweiser,curated starter list
+Carlsberg,carlsberg,curated starter list
+Diageo,diageo,curated starter list
+Pernod Ricard,pernodricard,curated starter list
+Bacardi,bacardi,curated starter list
+Brown Forman,jackdaniels,curated starter list
+Suntory,suntory,curated starter list
+Asahi,asahi,curated starter list
+Kirin,kirin,curated starter list
+Kweichow Moutai,moutai,curated starter list
+Philip Morris,philipmorris,curated starter list
+British American Tobacco,bat,curated starter list
+Altria,altria,curated starter list
+Japan Tobacco,jti,curated starter list
+JPMorgan Chase,jpmorgan;chase,curated starter list
+Bank of America,bankofamerica,curated starter list
+Citigroup,citi,curated starter list
+Wells Fargo,wellsfargo,curated starter list
+Goldman Sachs,goldmansachs,curated starter list
+Morgan Stanley,morganstanley,curated starter list
+BlackRock,blackrock,curated starter list
+Blackstone,blackstone,curated starter list
+Vanguard,vanguard,curated starter list
+Fidelity,fidelity,curated starter list
+Charles Schwab,schwab,curated starter list
+State Street,statestreet,curated starter list
+KKR,kkr,curated starter list
+Apollo,apollo,curated starter list
+Visa,visa,curated starter list
+Mastercard,mastercard,curated starter list
+American Express,amex,curated starter list
+Capital One,capitalone,curated starter list
+HSBC,hsbc,curated starter list
+Barclays,barclays,curated starter list
+Lloyds,lloyds,curated starter list
+NatWest,natwest,curated starter list
+Standard Chartered,standardchartered,curated starter list
+Santander,santander,curated starter list
+BBVA,bbva,curated starter list
+BNP Paribas,bnpparibas,curated starter list
+Societe Generale,societegenerale,curated starter list
+Credit Agricole,creditagricole,curated starter list
+UBS,ubs,curated starter list
+Deutsche Bank,deutschebank,curated starter list
+Commerzbank,commerzbank,curated starter list
+ING,ing,curated starter list
+ABN AMRO,abnamro,curated starter list
+UniCredit,unicredit,curated starter list
+Intesa Sanpaolo,intesasanpaolo,curated starter list
+Nordea,nordea,curated starter list
+Danske Bank,danskebank,curated starter list
+SEB,seb,curated starter list
+Swedbank,swedbank,curated starter list
+Allianz,allianz,curated starter list
+AXA,axa,curated starter list
+Zurich Insurance,zurich,curated starter list
+Munich Re,munichre,curated starter list
+Swiss Re,swissre,curated starter list
+Chubb,chubb,curated starter list
+Prudential,prudential,curated starter list
+AIA,aia,curated starter list
+Ping An,pingan,curated starter list
+China Life,chinalife,curated starter list
+ICBC,icbc,curated starter list
+China Construction Bank,ccb,curated starter list
+Agricultural Bank of China,agbank,curated starter list
+Bank of China,bankofchina,curated starter list
+China Merchants Bank,cmb,curated starter list
+Royal Bank of Canada,rbc,curated starter list
+Toronto Dominion Bank,tdbank,curated starter list
+Bank of Montreal,bmo,curated starter list
+Scotiabank,scotiabank,curated starter list
+CIBC,cibc,curated starter list
+Manulife,manulife,curated starter list
+Sun Life,sunlife,curated starter list
+Brookfield,brookfield,curated starter list
+Alimentation Couche Tard,circlek,curated starter list
+Canadian National Railway,cnrail,curated starter list
+Canadian Pacific Kansas City,cpkc,curated starter list
+Suncor,suncor,curated starter list
+Enbridge,enbridge,curated starter list
+Nutrien,nutrien,curated starter list
+PotashCorp,potash,curated starter list
+Johnson and Johnson,jnj,curated starter list
+Eli Lilly,lilly,curated starter list
+Novo Nordisk,novonordisk,curated starter list
+Roche,roche,curated starter list
+Novartis,novartis,curated starter list
+Pfizer,pfizer,curated starter list
+Merck,merck,curated starter list
+MSD,msd,curated starter list
+AstraZeneca,astrazeneca,curated starter list
+Sanofi,sanofi,curated starter list
+GSK,gsk,curated starter list
+AbbVie,abbvie,curated starter list
+Abbott,abbott,curated starter list
+Amgen,amgen,curated starter list
+Gilead,gilead,curated starter list
+Bristol Myers Squibb,bms,curated starter list
+Regeneron,regeneron,curated starter list
+Vertex,vertex,curated starter list
+Moderna,moderna,curated starter list
+BioNTech,biontech,curated starter list
+Boehringer Ingelheim,boehringer,curated starter list
+Teva,teva,curated starter list
+Sun Pharma,sunpharma,curated starter list
+Cipla,cipla,curated starter list
+Dr Reddy's,drreddys,curated starter list
+Sandoz,sandoz,curated starter list
+Thermo Fisher,thermofisher,curated starter list
+Danaher,danaher,curated starter list
+Medtronic,medtronic,curated starter list
+Boston Scientific,bostonscientific,curated starter list
+Stryker,stryker,curated starter list
+Intuitive Surgical,intuitive,curated starter list
+Edwards Lifesciences,edwards,curated starter list
+Becton Dickinson,bd,curated starter list
+GE HealthCare,gehealthcare,curated starter list
+Siemens Healthineers,siemenshealthineers,curated starter list
+UnitedHealth,unitedhealth,curated starter list
+CVS Health,cvs,curated starter list
+Cigna,cigna,curated starter list
+Elevance Health,elevance,curated starter list
+Humana,humana,curated starter list
+HCA Healthcare,hca,curated starter list
+McKesson,mckesson,curated starter list
+Cencora,cencora,curated starter list
+Cardinal Health,cardinalhealth,curated starter list
+Wolters Kluwer,wolterskluwer,curated starter list
+RELX,relx,curated starter list
+Thomson Reuters,thomsonreuters;reuters,curated starter list
+Pearson,pearson,curated starter list
+Bertelsmann,bertelsmann,curated starter list
+News Corp,newscorp,curated starter list
+Financial Times,ft,curated starter list
+The New York Times,nytimes,curated starter list
+Gannett,gannett,curated starter list
+Fox Corporation,fox,curated starter list
+Publicis,publicis,curated starter list
+Omnicom,omnicom,curated starter list
+WPP,wpp,curated starter list
+Dentsu,dentsu,curated starter list
+Interpublic,interpublic,curated starter list
+AT&T,att,curated starter list
+Verizon,verizon,curated starter list
+T Mobile,tmobile,curated starter list
+Deutsche Telekom,telekom,curated starter list
+Vodafone,vodafone,curated starter list
+Orange,orange,curated starter list
+Telefonica,telefonica,curated starter list
+BT Group,bt,curated starter list
+Telecom Italia,tim,curated starter list
+Swisscom,swisscom,curated starter list
+Telia,telia,curated starter list
+Telenor,telenor,curated starter list
+Elisa,elisa,curated starter list
+Turkcell,turkcell,curated starter list
+Turk Telekom,turktelekom,curated starter list
+Koc Holding,koc,curated starter list
+Sabanci,sabanci,curated starter list
+Arcelik,arcelik;beko,curated starter list
+Turkish Airlines,turkishairlines,curated starter list
+Pegasus Airlines,pegasus,curated starter list
+Trendyol,trendyol,curated starter list
+Hepsiburada,hepsiburada,curated starter list
+Getir,getir,curated starter list
+BIM,bim,curated starter list
+Migros,migros,curated starter list
+Akbank,akbank,curated starter list
+Garanti BBVA,garanti,curated starter list
+Isbank,isbank,curated starter list
+Ziraat Bank,ziraat,curated starter list
+Emirates,emirates,curated starter list
+Qatar Airways,qatarairways,curated starter list
+Etihad,etihad,curated starter list
+Singapore Airlines,singaporeairlines,curated starter list
+Cathay Pacific,cathaypacific,curated starter list
+Delta Air Lines,delta,curated starter list
+United Airlines,united,curated starter list
+American Airlines,americanairlines,curated starter list
+Southwest Airlines,southwest,curated starter list
+Lufthansa,lufthansa,curated starter list
+Air France KLM,airfrance;klm,curated starter list
+IAG,iag;britishairways;iberia,curated starter list
+Ryanair,ryanair,curated starter list
+EasyJet,easyjet,curated starter list
+Wizz Air,wizzair,curated starter list
+IndiGo,indigo,curated starter list
+Air India,airindia,curated starter list
+ANA,ana,curated starter list
+Japan Airlines,jal,curated starter list
+Maersk,maersk,curated starter list
+MSC,msc,curated starter list
+CMA CGM,cmacgm,curated starter list
+Hapag Lloyd,hapaglloyd,curated starter list
+COSCO,cosco,curated starter list
+DHL,dhl,curated starter list
+FedEx,fedex,curated starter list
+UPS,ups,curated starter list
+DSV,dsv,curated starter list
+Kuehne Nagel,kuehnenagel,curated starter list
+DB Schenker,dbschenker,curated starter list
+Union Pacific,unionpacific,curated starter list
+BNSF,bnsf,curated starter list
+CSX,csx,curated starter list
+Norfolk Southern,norfolksouthern,curated starter list
+Marriott,marriott,curated starter list
+Hilton,hilton,curated starter list
+Hyatt,hyatt,curated starter list
+Accor,accor,curated starter list
+IHG,ihg,curated starter list
+Wyndham,wyndham,curated starter list
+Carnival,carnival,curated starter list
+Royal Caribbean,royalcaribbean,curated starter list
+Norwegian Cruise Line,ncl,curated starter list
+MercadoLibre,mercadolibre;mercadopago,curated starter list
+Nu Holdings,nubank,curated starter list
+StoneCo,stone,curated starter list
+PagSeguro,pagseguro;pagbank,curated starter list
+Rappi,rappi,curated starter list
+iFood,ifood,curated starter list
+Kavak,kavak,curated starter list
+Globant,globant,curated starter list
+Despegar,despegar,curated starter list
+America Movil,americamovil;claro,curated starter list
+Telefonica Brasil,vivobr,curated starter list
+Itau Unibanco,itau,curated starter list
+Bradesco,bradesco,curated starter list
+Banco do Brasil,bancodobrasil,curated starter list
+BTG Pactual,btgpactual,curated starter list
+FEMSA,femsa;oxxo,curated starter list
+Grupo Bimbo,bimbo,curated starter list
+Cemex,cemex,curated starter list
+WEG,weg,curated starter list
+Embraer,embraer,curated starter list
+Suzano,suzano,curated starter list
+ArcelorMittal,arcelormittal,curated starter list
+Tenaris,tenaris,curated starter list
+YPF,ypf,curated starter list
+Naspers,naspers,curated starter list
+Prosus,prosus,curated starter list
+MTN,mtn,curated starter list
+Vodacom,vodacom,curated starter list
+Safaricom,safaricom,curated starter list
+Airtel Africa,airtelafrica,curated starter list
+Dangote,dangote,curated starter list
+Sasol,sasol,curated starter list
+Shoprite,shoprite,curated starter list
+Standard Bank,standardbank,curated starter list
+FirstRand,firstrand,curated starter list
+Capitec,capitec,curated starter list
+Flutterwave,flutterwave,curated starter list
+Chipper Cash,chippercash,curated starter list
+Moniepoint,moniepoint,curated starter list
+Yandex,yandex,curated starter list
+Sberbank,sber;sberbank,curated starter list
+T Bank,tbank;tinkoff,curated starter list
+VTB,vtb,curated starter list
+Alfa Bank,alfabank,curated starter list
+Gazprom,gazprom,curated starter list
+Lukoil,lukoil,curated starter list
+Rosneft,rosneft,curated starter list
+Novatek,novatek,curated starter list
+Surgutneftegas,surgutneftegas,curated starter list
+Tatneft,tatneft,curated starter list
+Nornickel,nornickel,curated starter list
+Rusal,rusal,curated starter list
+Severstal,severstal,curated starter list
+NLMK,nlmk,curated starter list
+MMK,mmk,curated starter list
+Alrosa,alrosa,curated starter list
+Polyus,polyus,curated starter list
+PhosAgro,phosagro,curated starter list
+EuroChem,eurochem,curated starter list
+Uralchem,uralchem,curated starter list
+Sibur,sibur,curated starter list
+Rosatom,rosatom,curated starter list
+Rostec,rostec,curated starter list
+Rostelecom,rostelecom,curated starter list
+MTS,mts,curated starter list
+MegaFon,megafon,curated starter list
+Beeline,beeline,curated starter list
+Tele2,tele2;t2,curated starter list
+VK,vk;vkontakte,curated starter list
+Mail.ru,mailru,curated starter list
+Ozon,ozon,curated starter list
+Wildberries,wildberries,curated starter list
+Avito,avito,curated starter list
+X5 Group,x5;pyaterochka;perekrestok,curated starter list
+Magnit,magnit,curated starter list
+Lenta,lenta,curated starter list
+Fix Price,fixprice,curated starter list
+Detsky Mir,detskiymir,curated starter list
+M Video,mvideo,curated starter list
+DNS Retail,dns,curated starter list
+Citilink,citilink,curated starter list
+Lamoda,lamoda,curated starter list
+Sportmaster,sportmaster,curated starter list
+Hoff,hoff,curated starter list
+VkusVill,vkusvill,curated starter list
+Samokat,samokat,curated starter list
+SDEK,cdek,curated starter list
+Boxberry,boxberry,curated starter list
+Russian Railways,rzd,curated starter list
+Aeroflot,aeroflot,curated starter list
+S7 Airlines,s7,curated starter list
+Pobeda,pobeda,curated starter list
+Sovcomflot,sovcomflot,curated starter list
+Kamaz,kamaz,curated starter list
+AvtoVAZ,avtovaz;lada,curated starter list
+GAZ,gaz,curated starter list
+Sollers,sollers,curated starter list
+Kaspersky,kaspersky,curated starter list
+Positive Technologies,pt;positive,curated starter list
+Astra Group,astralinux,curated starter list
+1C,1c,curated starter list
+Kontur,kontur,curated starter list
+Tensor,tensor;sbis,curated starter list
+Selectel,selectel,curated starter list
+Timeweb,timeweb,curated starter list
+REG.RU,regru,curated starter list
+Rambler,rambler,curated starter list
+HeadHunter,hh;headhunter,curated starter list
+Cian,cian,curated starter list
+2GIS,2gis,curated starter list
+Dodo Brands,dodo;dodopizza,curated starter list
+Sokolov,sokolov,curated starter list
+Sunlight,sunlight,curated starter list
+Splat,splat,curated starter list
+Faberlic,faberlic,curated starter list
+Oriflame,oriflame,curated starter list
+Avon,avon,curated starter list
+Mary Kay,marykay,curated starter list
+Amway,amway,curated starter list
+Herbalife,herbalife,curated starter list

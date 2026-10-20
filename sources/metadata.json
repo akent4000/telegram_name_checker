@@ -1,0 +1,29 @@
+{
+  "sp500": {
+    "url": "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv",
+    "retrieved_at": "2026-10-20T21:23:26.960133+00:00",
+    "rows": 503,
+    "note": "Community-maintained S&P 500 constituent dataset, sourced from Wikipedia; not an official S&P feed."
+  },
+  "moex": {
+    "url": "https://iss.moex.com/iss/securities.json",
+    "retrieved_at": "2026-10-20T22:18:59.635466+00:00",
+    "rows": 229,
+    "raw_security_rows": 273,
+    "filters": {
+      "is_trading": 1,
+      "group": "stock_shares",
+      "types": [
+        "common_share",
+        "preferred_share"
+      ],
+      "emitent_inn": "10 digits; unique by INN"
+    },
+    "note": "Issuer names from MOEX ISS. A broad issuer sample, not a size ranking. Latin aliases maintained separately in russian_companies.csv."
+  },
+  "russian_curated": {
+    "rows": 1070,
+    "updated_at": "2026-10-20T22:25:00.313341+00:00",
+    "note": "Curated Russian company names, local brands, services and historical names with candidate Latin spellings; not an official register or ownership verification."
+  }
+}

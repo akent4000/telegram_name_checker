@@ -1,0 +1,7 @@
+private/
+output/
+__pycache__/
+.venv/
+*.session*
+*.sqlite3*
+.env
