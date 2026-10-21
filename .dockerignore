@@ -1,0 +1,16 @@
+.git
+.venv
+.agents
+.codex
+.env
+.env.*
+!.env.example
+private
+output
+__pycache__
+**/__pycache__
+*.session*
+*.sqlite3*
+tests
+.pytest_cache
+candidates_preview.csv

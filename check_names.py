@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import csv
+import heapq
 import inspect
 import io
 import json
@@ -14,6 +15,7 @@ from pathlib import Path
 import random
 import re
 import sqlite3
+import signal
 import struct
 import sys
 import time
@@ -22,6 +24,7 @@ import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from collections import deque
+from contextlib import contextmanager, ExitStack
 
 ROOT = Path(__file__).resolve().parent
 SP500_URL = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
@@ -146,10 +149,25 @@ def write_csv(path: Path, fields: list[str], rows) -> None:
 
 class State:
     def __init__(self, path: Path):
-        self.db = sqlite3.connect(path)
+        self.db = sqlite3.connect(path, timeout=30)
+        self.db.execute("PRAGMA journal_mode=WAL")
+        self.db.execute("PRAGMA busy_timeout=30000")
         self.db.execute("CREATE TABLE IF NOT EXISTS checks (mode TEXT, username TEXT, status TEXT, checked REAL, detail TEXT, PRIMARY KEY(mode,username))")
         self.db.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)")
+        self.db.execute("CREATE TABLE IF NOT EXISTS candidates (username TEXT PRIMARY KEY, suffix TEXT, base TEXT, company TEXT, source TEXT, position INTEGER)")
         self.db.commit()
+
+    def sync_candidates(self, candidates: list[Candidate]):
+        with self.db:
+            self.db.execute("DELETE FROM candidates")
+            self.db.executemany("INSERT INTO candidates VALUES (?,?,?,?,?,?)", (
+                (c.username, c.suffix, c.base, " | ".join(sorted(c.companies)),
+                 " | ".join(sorted(c.sources)), i) for i, c in enumerate(candidates)))
+
+    def worker_status(self, status: str, **fields):
+        value = json.dumps({"status": status, "updated": time.time(), **fields}, ensure_ascii=False)
+        with self.db:
+            self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('worker',?)", (value,))
 
     def get(self, mode: str, username: str):
         return self.db.execute("SELECT status, checked, detail FROM checks WHERE mode=? AND username=?", (mode, username)).fetchone()
@@ -346,7 +364,111 @@ async def run_checks(checker, pending: list[Candidate], state: State, args, cand
     return 2 if account_limited else 0
 
 
+@contextmanager
+def process_lock(path: Path):
+    """OS releases the lock even after a crash; the file itself is retained."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stream = path.open("a+b")
+    locked = False
+    try:
+        if os.name == "nt":
+            import msvcrt
+            stream.seek(0, 2)
+            if not stream.tell():
+                stream.write(b"0")
+                stream.flush()
+            stream.seek(0)
+            try:
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError as error:
+                raise StopScan("Эта папка результатов или Telegram-сессия уже используется другим процессом.") from error
+        else:
+            import fcntl
+            try:
+                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as error:
+                raise StopScan("Эта папка результатов или Telegram-сессия уже используется другим процессом.") from error
+        locked = True
+        yield
+    finally:
+        if locked:
+            if os.name == "nt":
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(stream, fcntl.LOCK_UN)
+        stream.close()
+
+
+def session_lock_path(session: Path) -> Path:
+    return Path(str(session).removesuffix(".session") + ".session.lock")
+
+
+async def worker_pause(state: State, seconds: float, status: str, **fields):
+    until = time.time() + max(0, seconds)
+    while time.time() < until:
+        state.worker_status(status, resume_at=until, **fields)
+        await asyncio.sleep(min(10, max(0, until - time.time())))
+
+
+async def run_watch(checker, candidates: list[Candidate], state: State, args):
+    # checked timestamps are the durable queue. New names precede all checked names.
+    queue = []
+    for i, item in enumerate(candidates):
+        stored = state.get(args.mode, item.username)
+        queue.append((stored[1] if stored else float("-inf"), i, item))
+    heapq.heapify(queue)
+    checked = error_streak = unsupported_streak = 0
+    while queue:
+        previous, position, item = queue[0]
+        wait = previous + args.recheck_hours * 3600 - time.time()
+        if wait > 0:
+            await worker_pause(state, wait, "waiting", username=item.username, mode=args.mode)
+        state.worker_status("running", username=item.username, mode=args.mode)
+        try:
+            status, detail = await checker.check(item.username)
+        except StopScan:
+            delay = state.blocked_until() - time.time()
+            if delay <= 0:
+                raise
+            await worker_pause(state, delay, "flood_wait", username=item.username, mode=args.mode)
+            continue
+        state.put(args.mode, item.username, status, detail)
+        heapq.heapreplace(queue, (state.get(args.mode, item.username)[1], position, item))
+        checked += 1
+        state.worker_status("running", username=item.username, mode=args.mode, checked=checked)
+        print(f"[циклично: {checked}] @{item.username}: {status}", flush=True)
+        if checked % 25 == 0:
+            export_results(args.out, candidates, state, args.mode, args.cache_hours)
+        error_streak = error_streak + 1 if status in {"error", "unknown"} else 0
+        unsupported_streak = unsupported_streak + 1 if status == "unsupported_suffix" else 0
+        if error_streak >= 5 or unsupported_streak >= 5:
+            raise StopScan("Пять ошибок или неподдерживаемых суффиксов подряд; повтор после паузы.")
+
+
 async def scan(args, candidates: list[Candidate], state: State) -> int:
+    with ExitStack() as locks:
+        if not getattr(args, "_locks_held", False):
+            locks.enter_context(process_lock(args.out / ".scan.lock"))
+            locks.enter_context(process_lock(session_lock_path(args.session)))
+        if not getattr(args, "login_only", False):
+            state.sync_candidates(candidates)
+        if not getattr(args, "watch", False):
+            return await scan_once(args, candidates, state)
+        try:
+            while True:
+                state.worker_status("connecting", mode=args.mode)
+                try:
+                    await scan_once(args, candidates, state)
+                except (StopScan, OSError, asyncio.TimeoutError) as error:
+                    print(str(error), file=sys.stderr, flush=True)
+                    await worker_pause(state, max(args.retry_delay, state.blocked_until() - time.time()),
+                                       "error", message=str(error), mode=args.mode)
+        finally:
+            state.worker_status("stopped", mode=args.mode)
+
+
+async def scan_once(args, candidates: list[Candidate], state: State) -> int:
     try:
         from telethon import TelegramClient, errors
     except ImportError as error:
@@ -359,23 +481,36 @@ async def scan(args, candidates: list[Candidate], state: State) -> int:
     for candidate in candidates:
         stored = state.get(args.mode, candidate.username)
         retry_limited = args.retry_additional and stored and stored[0] == "account_limited"
-        if args.recheck or retry_limited or not fresh(stored, args.cache_hours):
+        if getattr(args, "watch", False) or args.recheck or retry_limited or not fresh(stored, args.cache_hours):
             pending.append(candidate)
     print(f"Кандидатов: {len(candidates)}; из кэша: {len(candidates)-len(pending)}; к проверке: {len(pending)}.")
-    if not pending:
+    if not pending and not getattr(args, "login_only", False):
         return 0
     factory = request_factory(args.mode)
     args.session.parent.mkdir(parents=True, exist_ok=True)
     client = TelegramClient(str(args.session), int(api_id), api_hash,
                             flood_sleep_threshold=0, request_retries=0, raise_last_call_error=True)
     try:
-        await client.start()
+        if getattr(args, "non_interactive", False):
+            await client.connect()
+            if not await client.is_user_authorized():
+                raise StopScan("Нет авторизованной сессии. Сначала выполните python check_names.py --login-only.")
+        else:
+            await client.start()
         me = await client.get_me()
+        if me is None:
+            raise StopScan("Telegram-сессия больше не авторизована. Повторите --login-only.")
         if me.bot:
             raise StopScan("Нужна авторизация пользовательского аккаунта, а не бота.")
+        if getattr(args, "login_only", False):
+            print("Telegram-сессия авторизована. Можно запускать worker.", flush=True)
+            return 0
         if args.mode == "bot" and any(not c.username.lower().endswith("bot") for c in pending) and not getattr(me, "premium", False):
             print("У аккаунта нет Premium. Сервер может отклонить проверку дополнительных имён.", flush=True)
         checker = Checker(client, factory, errors, state, args)
+        if getattr(args, "watch", False):
+            await run_watch(checker, candidates, state, args)
+            return 0
         return await run_checks(checker, pending, state, args, candidates)
     except errors.RPCError as error:
         raise StopScan(f"Ошибка Telegram: {rpc_name(error)}. Прогресс сохранён.") from error
@@ -419,6 +554,11 @@ def main(argv=None) -> int:
     parser.add_argument("--cache-hours", type=positive_float, default=72.0)
     parser.add_argument("--recheck", action="store_true", help="Повторно проверить даже свежие результаты")
     parser.add_argument("--retry-additional", action="store_true", help="Повторно проверить имена со статусом account_limited, даже если они есть в кэше")
+    parser.add_argument("--watch", action="store_true", help="Бесконечная очередь: непроверенные, затем самые старые проверки")
+    parser.add_argument("--recheck-hours", type=nonnegative_float, default=0, help="Минимальный возраст повторной проверки в --watch; 0 — непрерывные циклы")
+    parser.add_argument("--retry-delay", type=positive_float, default=300, help="Пауза после ошибок сервиса в --watch, с")
+    parser.add_argument("--non-interactive", action="store_true", help="Использовать готовую сессию без запроса телефона/кода")
+    parser.add_argument("--login-only", action="store_true", help="Только авторизовать Telegram-сессию, без проверки имён")
     args = parser.parse_args(argv)
     if args.delay < 3:
         parser.error("--delay должен быть не менее 3 секунд")
@@ -431,7 +571,23 @@ def main(argv=None) -> int:
         parser.error("Выберите только один из --dry-run и --export-only")
     if args.export_only and args.refresh_sources:
         parser.error("--export-only не совместим с --refresh-sources")
+    if args.watch and (args.dry_run or args.export_only or args.login_only or args.recheck or args.retry_additional):
+        parser.error("--watch нельзя сочетать с разовыми режимами проверки/экспорта/входа")
+    if args.login_only and (args.dry_run or args.export_only or args.non_interactive):
+        parser.error("--login-only требует интерактивный режим без --dry-run/--export-only")
+    locks = ExitStack()
     try:
+        # Protect candidate files and final exports as well as the Telegram session.
+        locks.enter_context(process_lock(args.out / ".scan.lock"))
+        if not args.dry_run and not args.export_only:
+            locks.enter_context(process_lock(session_lock_path(args.session)))
+        args._locks_held = True
+        if args.login_only:
+            state = State(args.out / "state.sqlite3")
+            try:
+                return asyncio.run(scan(args, [], state))
+            finally:
+                state.close()
         if args.refresh_sources:
             refresh_sp500()
         companies = load_companies(args.companies) if args.companies else []
@@ -474,13 +630,21 @@ def main(argv=None) -> int:
             finally:
                 state.close()
         return result
-    except (ValueError, OSError, csv.Error) as error:
+    except (ValueError, OSError, csv.Error, StopScan) as error:
         print(f"Ошибка: {error}", file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print("Остановлено.", file=sys.stderr)
+        return 130
+    finally:
+        locks.close()
 
 
 if __name__ == "__main__":
     # Keep local session credentials private on POSIX systems.
     if os.name == "posix":
         os.umask(0o077)
+    def stop_service(signum, frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, stop_service)
     raise SystemExit(main())

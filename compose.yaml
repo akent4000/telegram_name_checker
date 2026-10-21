@@ -1,0 +1,77 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-8080}:80"
+      - "${WEB_HOST:-127.0.0.1}:${WEB_HTTPS_PORT:-8443}:443"
+      - "${WEB_HOST:-127.0.0.1}:${WEB_HTTPS_PORT:-8443}:443/udp"
+    environment:
+      CADDY_SITE_ADDRESS: "${CADDY_SITE_ADDRESS:-:80}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: ["python", "web_server.py", "--host", "0.0.0.0", "--cache-hours", "${CACHE_HOURS:-72}"]
+    expose:
+      - "8080"
+    volumes:
+      - ./output:/app/output
+    restart: unless-stopped
+    init: true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  worker:
+    build: .
+    command:
+      - python
+      - check_names.py
+      - --watch
+      - --non-interactive
+      - --delay
+      - "${CHECK_DELAY:-3}"
+      - --jitter
+      - "${CHECK_JITTER:-0.5}"
+      - --cache-hours
+      - "${CACHE_HOURS:-72}"
+      - --recheck-hours
+      - "${RECHECK_HOURS:-0}"
+      - --retry-delay
+      - "${RETRY_DELAY:-300}"
+    environment:
+      TG_API_ID: "${TG_API_ID:-}"
+      TG_API_HASH: "${TG_API_HASH:-}"
+    volumes:
+      - ./output:/app/output
+      - ./private:/app/private
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+
+  login:
+    build: .
+    profiles: ["setup"]
+    command: ["python", "check_names.py", "--login-only"]
+    environment:
+      TG_API_ID: "${TG_API_ID:-}"
+      TG_API_HASH: "${TG_API_HASH:-}"
+    volumes:
+      - ./output:/app/output
+      - ./private:/app/private
+    stdin_open: true
+    tty: true
+
+volumes:
+  caddy_data:
+  caddy_config:
