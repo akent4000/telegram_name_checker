@@ -561,14 +561,12 @@ async def scan_botfather(args, candidates: list[Candidate], state: State) -> int
     from botfather_api import BotFatherAPI, BotFatherError
     if args.mode != "bot":
         raise StopScan("BotFather поддерживает только --mode bot.")
-    if getattr(args, "proxy", None):
-        raise StopScan("TG_PROXY относится к MTProto. Для BotFather очистите TG_PROXY; HTTP-прокси можно задать через HTTPS_PROXY.")
     pending = pending_checks(args, candidates, state)
     if not pending:
         return 0
     try:
         api = BotFatherAPI.from_file(args.botfather_session, timeout=args.timeout,
-                                     retry_delay=args.retry_delay)
+                                     retry_delay=args.retry_delay, proxy=getattr(args, "proxy", None))
     except BotFatherError as error:
         raise StopScan(str(error)) from None
     print("Способ проверки: BotFather Mini App HTTP (checkBotUsername).", flush=True)

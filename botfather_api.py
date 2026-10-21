@@ -8,13 +8,16 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 import html
-from http.client import HTTPException
+from http.client import HTTPException, HTTPSConnection
 import json
 from pathlib import Path
 import re
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
-from urllib.request import build_opener, HTTPRedirectHandler, Request
+from urllib.request import build_opener, HTTPRedirectHandler, HTTPSHandler, ProxyHandler, Request
+
+from python_socks import ProxyError, ProxyType
+from python_socks.sync import Proxy
 
 ORIGIN = "https://webappinternal.telegram.org"
 API_PATH = "/botfather/api"
@@ -107,6 +110,32 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
+class SocksHTTPSConnection(HTTPSConnection):
+    def __init__(self, host, *, proxy, **kwargs):
+        super().__init__(host, **kwargs)
+        self.proxy = proxy
+
+    def connect(self):
+        sock = self.proxy.connect(dest_host=self.host, dest_port=self.port, timeout=self.timeout)
+        try:
+            self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
+        except BaseException:
+            sock.close()
+            raise
+
+
+class SocksHTTPSHandler(HTTPSHandler):
+    def __init__(self, settings):
+        super().__init__()
+        self.proxy = Proxy(proxy_type=ProxyType.SOCKS5, host=settings["addr"], port=settings["port"],
+                           username=settings.get("username"), password=settings.get("password"), rdns=True)
+
+    def https_open(self, request):
+        def connection(host, **kwargs):
+            return SocksHTTPSConnection(host, proxy=self.proxy, **kwargs)
+        return self.do_open(connection, request, context=self._context)
+
+
 def retry_seconds(value, fallback: float) -> float:
     try:
         seconds = float(value)
@@ -126,22 +155,24 @@ def retry_seconds(value, fallback: float) -> float:
 
 
 class BotFatherAPI:
-    def __init__(self, session: dict, *, timeout: float, retry_delay: float):
+    def __init__(self, session: dict, *, timeout: float, retry_delay: float, proxy: dict | None = None):
         self.api_url = validate_api_url(session.get("api_url", ""))
         self.cookie = session.get("cookie", "")
         if not isinstance(self.cookie, str) or len(self.cookie) > 16384 or any(ord(c) < 32 or ord(c) >= 127 for c in self.cookie):
             raise ValueError("Некорректная cookie сессии BotFather.")
         self.timeout = timeout
         self.retry_delay = retry_delay
-        self.opener = build_opener(NoRedirect())
+        # Explicit SOCKS settings take precedence over environment proxies and NO_PROXY.
+        self.opener = (build_opener(ProxyHandler({}), SocksHTTPSHandler(proxy), NoRedirect())
+                       if proxy else build_opener(NoRedirect()))
 
     @classmethod
-    def from_file(cls, path: Path, *, timeout: float, retry_delay: float):
+    def from_file(cls, path: Path, *, timeout: float, retry_delay: float, proxy: dict | None = None):
         try:
             session = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(session, dict):
                 raise ValueError
-            return cls(session, timeout=timeout, retry_delay=retry_delay)
+            return cls(session, timeout=timeout, retry_delay=retry_delay, proxy=proxy)
         except (OSError, ValueError, TypeError):
             raise BotFatherError("Нет корректной HTTP-сессии BotFather. Выполните --import-botfather-har с новым HAR.", fatal=True) from None
 
@@ -171,7 +202,7 @@ class BotFatherAPI:
                     raise BotFatherError(f"BotFather: HTTP {error.code}.", fatal=error.code < 500) from None
             finally:
                 error.close()
-        except (URLError, OSError, HTTPException):
+        except (URLError, OSError, HTTPException, ProxyError):
             raise BotFatherError("Не удалось подключиться к HTTP API BotFather.") from None
         if len(raw) > MAX_RESPONSE:
             raise BotFatherError("BotFather вернул слишком большой ответ.")

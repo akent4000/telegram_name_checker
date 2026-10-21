@@ -252,8 +252,12 @@ username=examplebot&method=checkBotUsername
 
    Для внешнего прокси добавляйте `-f compose.yaml -f compose.external-proxy.yaml`
    перед `up` и `logs`, как в основном разделе запуска. HTTP-режим не требует
-   `TG_API_ID`, `TG_API_HASH` или MTProto-сессии. `TG_PROXY` относится только к MTProto;
-   HTTP-клиент без Docker при необходимости использует стандартную `HTTPS_PROXY`.
+   `TG_API_ID`, `TG_API_HASH` или MTProto-сессии. Если выход в сеть требует SOCKS5,
+   сохраните `TG_PROXY=socks5://mihomo:7890`: настройка работает и для BotFather,
+   включая разрешение имени Telegram через прокси. Имя `mihomo` должно быть доступно
+   из сети контейнера worker. При ошибке SOCKS5 прямого подключения не будет.
+   Без `TG_PROXY` HTTP-клиент также учитывает стандартную `HTTPS_PROXY` из окружения
+   процесса (текущий Compose её не передаёт).
 
 Без Docker можно проверить несколько имён:
 

@@ -1,6 +1,7 @@
 import asyncio
 import io
 import json
+import ssl
 from pathlib import Path
 import tempfile
 import time
@@ -15,6 +16,54 @@ import check_names as app
 
 
 SESSION_URL = api.ORIGIN + api.API_PATH + "?hash=test_session_123"
+
+
+class SocksTransportTests(unittest.TestCase):
+    def test_explicit_proxy_routes_https_despite_environment_and_keeps_credentials_separate(self):
+        settings = app.parse_socks5_proxy("socks5://user:password@mihomo:7890")
+        with patch.dict(app.os.environ, {"HTTPS_PROXY": "http://wrong:8080", "NO_PROXY": "*"}), \
+             patch.object(api, "Proxy") as proxy_class, \
+             patch.object(api, "SocksHTTPSConnection") as connection_class:
+            client = api.BotFatherAPI({"api_url": SESSION_URL, "cookie": "session=test"},
+                                      timeout=7, retry_delay=300, proxy=settings)
+            connection = connection_class.return_value
+            response = connection.getresponse.return_value
+            response.status, response.code, response.reason = 200, 200, "OK"
+            response.__enter__.return_value = response
+            response.read.return_value = b'{"ok":true}'
+            self.assertEqual(client.check_username("examplebot")[0], "available")
+            proxy_class.assert_called_once_with(proxy_type=api.ProxyType.SOCKS5, host="mihomo", port=7890,
+                                               username="user", password="password", rdns=True)
+            self.assertEqual(connection_class.call_args.args, ("webappinternal.telegram.org",))
+            self.assertEqual(connection_class.call_args.kwargs["timeout"], 7)
+            self.assertIs(connection_class.call_args.kwargs["proxy"], proxy_class.return_value)
+            headers = connection.request.call_args.args[3]
+            self.assertEqual(headers["Cookie"], "session=test")
+            self.assertNotIn("Proxy-Authorization", headers)
+
+    def test_socks_socket_is_wrapped_with_verified_tls_and_closed_on_tls_failure(self):
+        proxy = MagicMock()
+        connection = api.SocksHTTPSConnection("webappinternal.telegram.org", proxy=proxy, timeout=7)
+        self.assertTrue(connection._context.check_hostname)
+        self.assertEqual(connection._context.verify_mode, ssl.CERT_REQUIRED)
+        with patch.object(connection._context, "wrap_socket", side_effect=ssl.SSLError("test")) as wrap:
+            with self.assertRaises(ssl.SSLError):
+                connection.connect()
+        proxy.connect.assert_called_once_with(dest_host="webappinternal.telegram.org", dest_port=443, timeout=7)
+        wrap.assert_called_once_with(proxy.connect.return_value, server_hostname="webappinternal.telegram.org")
+        proxy.connect.return_value.close.assert_called_once()
+
+    def test_proxy_failure_is_redacted_and_never_falls_back_to_direct_connection(self):
+        settings = app.parse_socks5_proxy("socks5://mihomo:7890")
+        with patch.object(api.Proxy, "connect", side_effect=api.ProxyError("secret password")) as connect, \
+             patch("socket.create_connection") as direct:
+            client = api.BotFatherAPI({"api_url": SESSION_URL}, timeout=1, retry_delay=300, proxy=settings)
+            with self.assertRaises(api.BotFatherError) as error:
+                client.check_username("examplebot")
+            self.assertNotIn("secret", str(error.exception))
+            self.assertFalse(error.exception.fatal)
+            connect.assert_called_once()
+            direct.assert_not_called()
 
 
 class APIClientTests(unittest.TestCase):
@@ -186,6 +235,7 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
         await native.wait_for_cooldown()
 
     async def test_http_backend_exports_without_native_telegram_credentials(self):
+        self.args.proxy = app.parse_socks5_proxy("socks5://mihomo:7890")
         self.args.botfather_session.write_text(json.dumps({"api_url": SESSION_URL}))
         candidates, _ = app.make_candidates([app.Company("Nvidia")], ["gay"], True)
         client = api.BotFatherAPI.from_file(self.args.botfather_session, timeout=1, retry_delay=300)
@@ -193,10 +243,11 @@ class BackendTests(unittest.IsolatedAsyncioTestCase):
         client.opener.open.return_value.__enter__.return_value.read.return_value = b'{"ok":true}'
         with patch.dict(app.os.environ, {"TG_API_ID": "", "TG_API_HASH": ""}), \
              patch("telethon.TelegramClient") as native, \
-             patch.object(api.BotFatherAPI, "from_file", return_value=client), \
+             patch.object(api.BotFatherAPI, "from_file", return_value=client) as load, \
              patch.object(app.asyncio, "sleep", AsyncMock()) as sleep:
             self.assertEqual(await app.scan_once(self.args, candidates, self.state), 0)
         native.assert_not_called()
+        self.assertEqual(load.call_args.kwargs["proxy"], self.args.proxy)
         self.assertTrue(any(c.args[0] > 2.5 for c in sleep.await_args_list))
         self.assertEqual(client.opener.open.call_count, 2)
         self.assertEqual(self.state.get("bot", "nvidia_gay")[0], "available")
