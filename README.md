@@ -15,6 +15,7 @@ Python 3.10+. Скрипт перебирает названия компани�
 ## Сайт и постоянная проверка через Docker
 
 В проект входят сайт на русском языке, reverse proxy Caddy и отдельный фоновый обработчик `worker`.
+Для внешнего reverse proxy предусмотрен [вариант запуска без Caddy](#запуск-без-caddy-с-внешним-reverse-proxy).
 Сайт читает общую SQLite-базу: поиск по имени/компании, фильтры статуса и суффикса,
 сортировка, страницы, копирование имени, экспорт CSV/TXT, состояние обработчика
 и ближайшие имена в очереди. Данные автоматически обновляются каждые 15 секунд.
@@ -69,7 +70,7 @@ docker compose up -d --build         # пересобрать и запусти�
 контейнеров. Telegram-сессия доступна только обработчику и сервису входа;
 в образ и сервис сайта она не попадает. Сайт выдаёт только интерфейс и API результатов.
 По умолчанию порт доступен только на этом компьютере (`WEB_HOST=127.0.0.1`).
-Внешние запросы принимает Caddy и передаёт в `web:8080` по сети Compose;
+В стандартном варианте внешние запросы принимает Caddy и передаёт в `web:8080` по сети Compose;
 у `web` нет опубликованного порта. Конфигурация находится в `Caddyfile`.
 
 ### Домен и HTTPS через Caddy
@@ -103,6 +104,63 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter c
 После изменения переменных `.env` используйте `docker compose up -d`:
 они передаются контейнеру при его создании.
 
+### Запуск без Caddy с внешним reverse proxy
+
+Если Nginx, Traefik или другой reverse proxy уже настроен, используйте дополнительный
+файл `compose.external-proxy.yaml`. Он отключает автозапуск Caddy через профиль
+`bundled-proxy` и публикует HTTP-порт сервиса `web` напрямую.
+Создание `.env`, сборка и авторизация Telegram выполняются как в шагах 1–2 выше.
+
+Для прокси на том же сервере задайте в `.env`:
+
+```dotenv
+WEB_HOST=127.0.0.1
+WEB_PORT=8080
+```
+
+Если Caddy из этого проекта уже запущен, сначала остановите его, чтобы освободить порт:
+
+```bash
+docker compose stop caddy
+```
+
+Запустите сайт и обработчик:
+
+```bash
+docker compose -f compose.yaml -f compose.external-proxy.yaml up -d --build
+```
+
+Для просмотра сайта без обработчика добавьте `web` в конец команды.
+Сайт доступен по HTTP на `127.0.0.1:8080`; проверка готовности — `/healthz`.
+Настройте внешний прокси на этот адрес. Например, в существующем блоке `server`
+Nginx для вашего домена:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+Домен, HTTPS-сертификаты и перенаправление HTTP на HTTPS настраиваются на внешнем прокси.
+`WEB_HTTPS_PORT` и `CADDY_SITE_ADDRESS` в этом режиме не используются.
+Если прокси работает на другом сервере, задайте `WEB_HOST` равным доступному ему IP-адресу
+сервера приложения и разрешите доступ к `WEB_PORT` только от прокси.
+Для прокси в контейнере `127.0.0.1` указывает на сам контейнер: подключите его
+к сети Compose `<имя-проекта>_default` и используйте upstream `http://web:8080`.
+
+Для обновления и управления этим вариантом всегда указывайте оба Compose-файла:
+
+```bash
+docker compose -f compose.yaml -f compose.external-proxy.yaml logs -f web worker
+docker compose -f compose.yaml -f compose.external-proxy.yaml ps
+docker compose -f compose.yaml -f compose.external-proxy.yaml up -d --build
+docker compose -f compose.yaml -f compose.external-proxy.yaml down
+```
+
 ### Как работает циклическая очередь
 
 Сначала проверяются имена без результата. Затем берётся самая старая проверка
@@ -120,14 +178,16 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile --adapter c
 параллельный запуск другого экземпляра с теми же ресурсами отклоняется.
 Обычный скрипт старой версии перед запуском сервиса нужно остановить.
 
-Настройки в `.env` (после изменения выполните `docker compose up -d`):
+Настройки в `.env` (после изменения выполните `docker compose up -d`;
+для внешнего прокси добавьте `-f compose.yaml -f compose.external-proxy.yaml` перед `up`):
 
 | Переменная | По умолчанию | Значение |
 | --- | --- | --- |
-| `WEB_PORT` | `8080` | Внешний HTTP-порт Caddy |
-| `WEB_HTTPS_PORT` | `8443` | Внешний HTTPS-порт Caddy (TCP/UDP) |
-| `WEB_HOST` | `127.0.0.1` | Адрес публикации портов Caddy |
-| `CADDY_SITE_ADDRESS` | `:80` | Локальный HTTP либо домен для автоматического HTTPS |
+| `WEB_PORT` | `8080` | Внешний HTTP-порт Caddy или `web` в режиме внешнего прокси |
+| `WEB_HTTPS_PORT` | `8443` | Только Caddy: внешний HTTPS-порт (TCP/UDP) |
+| `WEB_HOST` | `127.0.0.1` | Адрес публикации портов Caddy или `web` в режиме внешнего прокси |
+| `CADDY_SITE_ADDRESS` | `:80` | Только Caddy: локальный HTTP либо домен для автоматического HTTPS |
+| `TG_PROXY` | пусто | SOCKS5-прокси для Telegram: `socks5://[user:password@]host:port` |
 | `CHECK_DELAY` | `3` | Минимальная пауза между запросами, не менее 3 с |
 | `CHECK_JITTER` | `0.5` | Дополнительная случайная пауза, с |
 | `RECHECK_HOURS` | `0` | Минимальный возраст повторной проверки; 0 — непрерывные круги |
@@ -235,6 +295,49 @@ python check_names.py
 Остановка — `Ctrl+C`. Повторите ту же команду для продолжения. После пробного
 запуска с `--limit 25` можно запустить команду без лимита: первые результаты
 будут взяты из кэша, остальные имена будут проверены.
+
+## Внешний SOCKS5-прокси для Telegram
+
+Прокси задаётся флагом `--proxy` или переменной окружения `TG_PROXY`.
+Поддерживаются подключения без авторизации и с логином/паролем:
+
+```bash
+python check_names.py --proxy 'socks5://proxy.example.com:1080' --limit 25
+python check_names.py --proxy 'socks5://user:password@proxy.example.com:1080' --login-only
+```
+
+Для постоянной настройки в PowerShell:
+
+```powershell
+$env:TG_PROXY = 'socks5://user:password@proxy.example.com:1080'
+python check_names.py --watch --non-interactive
+```
+
+На Linux/macOS: `export TG_PROXY='socks5://user:password@proxy.example.com:1080'`.
+Флаг `--proxy` имеет приоритет над `TG_PROXY`; `--proxy ''` отключает прокси
+для конкретного запуска. Без настройки используется прямое подключение.
+Порт обязателен. Для IPv6 используйте скобки: `socks5://[2001:db8::1]:1080`.
+Спецсимволы в логине/пароле кодируйте как в URL: `@` → `%40`, `:` → `%3A`,
+`#` → `%23`, `$` → `%24`, `%` → `%25`.
+Также принимается схема `socks5h://`; обе схемы используют `rdns=True`.
+
+Для Docker впишите в `.env`:
+
+```dotenv
+TG_PROXY=socks5://user:password@proxy.example.com:1080
+```
+
+Затем выполните `docker compose build` и `docker compose up -d worker`.
+Настройка автоматически передаётся и в `docker compose run --rm login`.
+При запуске без Docker `.env` автоматически не читается: задайте переменную
+в терминале или используйте флаг. После обновления установите зависимости:
+`python -m pip install -r requirements.txt`.
+
+Прокси применяется ко всем соединениям Telethon: входу, проверкам и повторным
+подключениям. При недоступности прокси запросы завершаются ошибкой;
+автоматического перехода на прямое подключение нет. Обновление списка
+S&P 500 через `--refresh-sources` использует прежнее HTTP-подключение.
+Формат настройки соответствует [документации Telethon](https://docs.telethon.dev/en/stable/basic/signing-in.html#signing-in-behind-a-proxy).
 
 ## Что входит в список
 

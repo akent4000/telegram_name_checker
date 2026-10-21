@@ -20,6 +20,7 @@ import struct
 import sys
 import time
 import unicodedata
+from urllib.parse import unquote, urlsplit
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -468,9 +469,40 @@ async def scan(args, candidates: list[Candidate], state: State) -> int:
             state.worker_status("stopped", mode=args.mode)
 
 
+def parse_socks5_proxy(value: str | None) -> dict | None:
+    """Validate a proxy URL without including credentials in error messages."""
+    if not value:
+        return None
+    try:
+        if any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError
+        url = urlsplit(value)
+        if (url.scheme not in {"socks5", "socks5h"} or not url.hostname
+                or url.port is None or not 1 <= url.port <= 65535
+                or url.path not in {"", "/"} or "?" in value or "#" in value):
+            raise ValueError
+        username, password = url.username, url.password
+        if (username is None) != (password is None):
+            raise ValueError
+        if username is not None:
+            if re.search(r"%(?![0-9a-fA-F]{2})", username + password):
+                raise ValueError
+            username = unquote(username, errors="strict")
+            password = unquote(password, errors="strict")
+            if not all(1 <= len(part.encode("utf-8")) <= 255 for part in (username, password)):
+                raise ValueError
+        return {"proxy_type": "socks5", "addr": url.hostname, "port": url.port,
+                "rdns": True, "username": username, "password": password}
+    except ValueError:
+        raise ValueError("Прокси: нужен URL socks5://host:port или socks5://user:password@host:port "
+                         "(порт 1–65535; спецсимволы в логине/пароле кодируйте как %XX).") from None
+
+
 async def scan_once(args, candidates: list[Candidate], state: State) -> int:
     try:
         from telethon import TelegramClient, errors
+        if getattr(args, "proxy", None):
+            from python_socks.async_.asyncio import Proxy  # noqa: F401
     except ImportError as error:
         raise StopScan("Установите зависимость: python -m pip install -r requirements.txt") from error
     api_id = os.environ.get("TG_API_ID", "")
@@ -489,6 +521,7 @@ async def scan_once(args, candidates: list[Candidate], state: State) -> int:
     factory = request_factory(args.mode)
     args.session.parent.mkdir(parents=True, exist_ok=True)
     client = TelegramClient(str(args.session), int(api_id), api_hash,
+                            proxy=getattr(args, "proxy", None),
                             flood_sleep_threshold=0, request_retries=0, raise_last_call_error=True)
     try:
         if getattr(args, "non_interactive", False):
@@ -546,6 +579,8 @@ def main(argv=None) -> int:
     parser.add_argument("--mode", choices=("bot", "namespace"), default="bot", help="namespace — только общая доступность, без подтверждения для бота")
     parser.add_argument("--out", type=Path, default=ROOT / "output")
     parser.add_argument("--session", type=Path, default=ROOT / "private" / "checker")
+    parser.add_argument("--proxy", default=os.environ.get("TG_PROXY", ""), metavar="URL",
+                        help="SOCKS5-прокси: socks5://[user:password@]host:port; по умолчанию TG_PROXY")
     parser.add_argument("--limit", type=int, help="Ограничить число кандидатов, например 100")
     parser.add_argument("--delay", type=positive_float, default=3.0, help="Минимальный интервал между запросами, с (не менее 3)")
     parser.add_argument("--jitter", type=nonnegative_float, default=0.5)
@@ -560,6 +595,10 @@ def main(argv=None) -> int:
     parser.add_argument("--non-interactive", action="store_true", help="Использовать готовую сессию без запроса телефона/кода")
     parser.add_argument("--login-only", action="store_true", help="Только авторизовать Telegram-сессию, без проверки имён")
     args = parser.parse_args(argv)
+    try:
+        args.proxy = parse_socks5_proxy(args.proxy)
+    except ValueError as error:
+        parser.error(str(error))
     if args.delay < 3:
         parser.error("--delay должен быть не менее 3 секунд")
     if args.limit is not None and args.limit <= 0:

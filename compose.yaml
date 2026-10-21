@@ -52,6 +52,7 @@ services:
     environment:
       TG_API_ID: "${TG_API_ID:-}"
       TG_API_HASH: "${TG_API_HASH:-}"
+      TG_PROXY: "${TG_PROXY:-}"
     volumes:
       - ./output:/app/output
       - ./private:/app/private
@@ -66,6 +67,7 @@ services:
     environment:
       TG_API_ID: "${TG_API_ID:-}"
       TG_API_HASH: "${TG_API_HASH:-}"
+      TG_PROXY: "${TG_PROXY:-}"
     volumes:
       - ./output:/app/output
       - ./private:/app/private

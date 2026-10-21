@@ -1,0 +1,9 @@
+# Use with: docker compose -f compose.yaml -f compose.external-proxy.yaml up -d --build
+services:
+  caddy:
+    # Keep the bundled proxy inactive when starting the external-proxy stack.
+    profiles: ["bundled-proxy"]
+
+  web:
+    ports:
+      - "${WEB_HOST:-127.0.0.1}:${WEB_PORT:-8080}:8080"
