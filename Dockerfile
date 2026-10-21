@@ -7,7 +7,7 @@ WORKDIR /app
 
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-COPY check_names.py web_server.py ./
+COPY check_names.py botfather_api.py web_server.py ./
 COPY sources/ ./sources/
 COPY web/ ./web/
 COPY companies_example.csv ./

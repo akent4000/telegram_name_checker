@@ -66,6 +66,13 @@ def utc_stamp(epoch: float | None = None) -> str:
     return datetime.fromtimestamp(epoch if epoch is not None else time.time(), timezone.utc).isoformat(timespec="seconds")
 
 
+def cooldown_key(backend: str = "mtproto") -> str:
+    if backend not in {"mtproto", "botfather"}:
+        raise ValueError("Неизвестный способ проверки")
+    # Keep existing MTProto deadlines in place; HTTP has its own server limits.
+    return "blocked_until" if backend == "mtproto" else "blocked_until:botfather"
+
+
 def normalize(name: str) -> str:
     name = re.sub(r"\([^)]*\)", "", name).strip()
     while True:
@@ -177,13 +184,13 @@ class State:
         self.db.execute("INSERT OR REPLACE INTO checks VALUES (?,?,?,?,?)", (mode, username, status, time.time(), detail))
         self.db.commit()
 
-    def blocked_until(self) -> float:
-        row = self.db.execute("SELECT value FROM metadata WHERE key='blocked_until'").fetchone()
+    def blocked_until(self, backend: str = "mtproto") -> float:
+        row = self.db.execute("SELECT value FROM metadata WHERE key=?", (cooldown_key(backend),)).fetchone()
         return float(row[0]) if row else 0.0
 
-    def block(self, seconds: int):
-        deadline = max(self.blocked_until(), time.time() + seconds + 1)
-        self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('blocked_until',?)", (str(deadline),))
+    def block(self, seconds: float, backend: str = "mtproto"):
+        deadline = max(self.blocked_until(backend), time.time() + seconds + 1)
+        self.db.execute("INSERT OR REPLACE INTO metadata VALUES (?,?)", (cooldown_key(backend), str(deadline)))
         self.db.commit()
 
     def close(self):
@@ -283,28 +290,38 @@ def rpc_name(error) -> str:
     return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", "_", name).upper()
 
 
-class Checker:
-    def __init__(self, client, factory, errors, state: State, args):
-        self.client, self.factory, self.errors, self.state, self.args = client, factory, errors, state, args
+class RequestPacer:
+    def __init__(self, state: State, args):
+        self.state, self.args = state, args
+        self.backend = getattr(args, "backend", "mtproto")
         self.last_request = 0.0
-        self.flood_errors = tuple(getattr(errors, name) for name in ("FloodWaitError", "FloodPremiumWaitError") if hasattr(errors, name))
 
     async def wait_for_cooldown(self):
-        delay = max(0, self.state.blocked_until() - time.time())
+        delay = max(0, self.state.blocked_until(self.backend) - time.time())
         if delay > self.args.max_flood_wait:
             raise StopScan(f"Telegram требует паузу ещё {math.ceil(delay)} с. Повторите запуск позже: пауза сохранена.")
         if delay:
             print(f"Пауза Telegram: {math.ceil(delay)} с.", flush=True)
             await asyncio.sleep(delay)
 
+    async def pace(self):
+        await self.wait_for_cooldown()
+        remaining = self.last_request + self.args.delay + random.uniform(0, self.args.jitter) - time.monotonic()
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+        self.last_request = time.monotonic()
+
+
+class Checker(RequestPacer):
+    def __init__(self, client, factory, errors, state: State, args):
+        super().__init__(state, args)
+        self.client, self.factory, self.errors = client, factory, errors
+        self.flood_errors = tuple(getattr(errors, name) for name in ("FloodWaitError", "FloodPremiumWaitError") if hasattr(errors, name))
+
     async def check(self, username: str) -> tuple[str, str]:
         floods = 0
         for attempt in range(4):
-            await self.wait_for_cooldown()
-            remaining = self.last_request + self.args.delay + random.uniform(0, self.args.jitter) - time.monotonic()
-            if remaining > 0:
-                await asyncio.sleep(remaining)
-            self.last_request = time.monotonic()
+            await self.pace()
             try:
                 value = await asyncio.wait_for(self.client(self.factory(username)), timeout=self.args.timeout)
                 if value is True:
@@ -314,7 +331,7 @@ class Checker:
                     return "unavailable", "Telegram returned BoolFalse"
                 return "unknown", f"Unexpected response type: {type(value).__name__}"
             except self.flood_errors as error:
-                self.state.block(error.seconds)
+                self.state.block(error.seconds, self.backend)
                 floods += 1
                 print(f"FLOOD_WAIT: {error.seconds} с, @{username}", flush=True)
                 if floods >= 3:
@@ -335,6 +352,29 @@ class Checker:
                     return "error", type(error).__name__
                 await asyncio.sleep(2 ** (attempt + 1))
         return "error", "Retry budget exhausted"
+
+
+class BotFatherChecker(RequestPacer):
+    def __init__(self, api, state: State, args):
+        super().__init__(state, args)
+        self.api = api
+
+    async def check(self, username: str) -> tuple[str, str]:
+        from botfather_api import BotFatherError
+        for attempt in range(3):
+            await self.pace()
+            try:
+                return await asyncio.to_thread(self.api.check_username, username)
+            except BotFatherError as error:
+                if error.retry_after is not None:
+                    self.state.block(error.retry_after, self.backend)
+                    print(f"BotFather FLOOD_WAIT: {math.ceil(error.retry_after)} с, @{username}", flush=True)
+                    if attempt == 2:
+                        raise StopScan(str(error)) from None
+                    continue
+                if error.fatal:
+                    raise StopScan(str(error)) from None
+                return "error", str(error)
 
 
 async def run_checks(checker, pending: list[Candidate], state: State, args, candidates: list[Candidate] | None = None) -> int:
@@ -405,6 +445,12 @@ def session_lock_path(session: Path) -> Path:
     return Path(str(session).removesuffix(".session") + ".session.lock")
 
 
+def backend_lock_path(args) -> Path:
+    if getattr(args, "backend", "mtproto") == "botfather":
+        return Path(str(args.botfather_session) + ".lock")
+    return session_lock_path(args.session)
+
+
 async def worker_pause(state: State, seconds: float, status: str, **fields):
     until = time.time() + max(0, seconds)
     while time.time() < until:
@@ -413,6 +459,7 @@ async def worker_pause(state: State, seconds: float, status: str, **fields):
 
 
 async def run_watch(checker, candidates: list[Candidate], state: State, args):
+    backend = getattr(args, "backend", "mtproto")
     # checked timestamps are the durable queue. New names precede all checked names.
     queue = []
     for i, item in enumerate(candidates):
@@ -424,20 +471,20 @@ async def run_watch(checker, candidates: list[Candidate], state: State, args):
         previous, position, item = queue[0]
         wait = previous + args.recheck_hours * 3600 - time.time()
         if wait > 0:
-            await worker_pause(state, wait, "waiting", username=item.username, mode=args.mode)
-        state.worker_status("running", username=item.username, mode=args.mode)
+            await worker_pause(state, wait, "waiting", username=item.username, mode=args.mode, backend=backend)
+        state.worker_status("running", username=item.username, mode=args.mode, backend=backend)
         try:
             status, detail = await checker.check(item.username)
         except StopScan:
-            delay = state.blocked_until() - time.time()
+            delay = state.blocked_until(backend) - time.time()
             if delay <= 0:
                 raise
-            await worker_pause(state, delay, "flood_wait", username=item.username, mode=args.mode)
+            await worker_pause(state, delay, "flood_wait", username=item.username, mode=args.mode, backend=backend)
             continue
         state.put(args.mode, item.username, status, detail)
         heapq.heapreplace(queue, (state.get(args.mode, item.username)[1], position, item))
         checked += 1
-        state.worker_status("running", username=item.username, mode=args.mode, checked=checked)
+        state.worker_status("running", username=item.username, mode=args.mode, checked=checked, backend=backend)
         print(f"[циклично: {checked}] @{item.username}: {status}", flush=True)
         if checked % 25 == 0:
             export_results(args.out, candidates, state, args.mode, args.cache_hours)
@@ -448,25 +495,26 @@ async def run_watch(checker, candidates: list[Candidate], state: State, args):
 
 
 async def scan(args, candidates: list[Candidate], state: State) -> int:
+    backend = getattr(args, "backend", "mtproto")
     with ExitStack() as locks:
         if not getattr(args, "_locks_held", False):
             locks.enter_context(process_lock(args.out / ".scan.lock"))
-            locks.enter_context(process_lock(session_lock_path(args.session)))
+            locks.enter_context(process_lock(backend_lock_path(args)))
         if not getattr(args, "login_only", False):
             state.sync_candidates(candidates)
         if not getattr(args, "watch", False):
             return await scan_once(args, candidates, state)
         try:
             while True:
-                state.worker_status("connecting", mode=args.mode)
+                state.worker_status("connecting", mode=args.mode, backend=backend)
                 try:
                     await scan_once(args, candidates, state)
                 except (StopScan, OSError, asyncio.TimeoutError) as error:
                     print(str(error), file=sys.stderr, flush=True)
-                    await worker_pause(state, max(args.retry_delay, state.blocked_until() - time.time()),
-                                       "error", message=str(error), mode=args.mode)
+                    await worker_pause(state, max(args.retry_delay, state.blocked_until(backend) - time.time()),
+                                       "error", message=str(error), mode=args.mode, backend=backend)
         finally:
-            state.worker_status("stopped", mode=args.mode)
+            state.worker_status("stopped", mode=args.mode, backend=backend)
 
 
 def parse_socks5_proxy(value: str | None) -> dict | None:
@@ -498,7 +546,42 @@ def parse_socks5_proxy(value: str | None) -> dict | None:
                          "(порт 1–65535; спецсимволы в логине/пароле кодируйте как %XX).") from None
 
 
+def pending_checks(args, candidates: list[Candidate], state: State) -> list[Candidate]:
+    pending = []
+    for candidate in candidates:
+        stored = state.get(args.mode, candidate.username)
+        retry_limited = args.retry_additional and stored and stored[0] == "account_limited"
+        if getattr(args, "watch", False) or args.recheck or retry_limited or not fresh(stored, args.cache_hours):
+            pending.append(candidate)
+    print(f"Кандидатов: {len(candidates)}; из кэша: {len(candidates)-len(pending)}; к проверке: {len(pending)}.")
+    return pending
+
+
+async def scan_botfather(args, candidates: list[Candidate], state: State) -> int:
+    from botfather_api import BotFatherAPI, BotFatherError
+    if args.mode != "bot":
+        raise StopScan("BotFather поддерживает только --mode bot.")
+    if getattr(args, "proxy", None):
+        raise StopScan("TG_PROXY относится к MTProto. Для BotFather очистите TG_PROXY; HTTP-прокси можно задать через HTTPS_PROXY.")
+    pending = pending_checks(args, candidates, state)
+    if not pending:
+        return 0
+    try:
+        api = BotFatherAPI.from_file(args.botfather_session, timeout=args.timeout,
+                                     retry_delay=args.retry_delay)
+    except BotFatherError as error:
+        raise StopScan(str(error)) from None
+    print("Способ проверки: BotFather Mini App HTTP (checkBotUsername).", flush=True)
+    checker = BotFatherChecker(api, state, args)
+    if getattr(args, "watch", False):
+        await run_watch(checker, candidates, state, args)
+        return 0
+    return await run_checks(checker, pending, state, args, candidates)
+
+
 async def scan_once(args, candidates: list[Candidate], state: State) -> int:
+    if getattr(args, "backend", "mtproto") == "botfather" and not getattr(args, "login_only", False):
+        return await scan_botfather(args, candidates, state)
     try:
         from telethon import TelegramClient, errors
         if getattr(args, "proxy", None):
@@ -509,13 +592,7 @@ async def scan_once(args, candidates: list[Candidate], state: State) -> int:
     api_hash = os.environ.get("TG_API_HASH", "")
     if not api_id.isdecimal() or int(api_id) <= 0 or not re.fullmatch(r"[0-9a-fA-F]{32}", api_hash):
         raise StopScan("Задайте TG_API_ID и TG_API_HASH приложения с https://my.telegram.org/apps (не токен бота).")
-    pending = []
-    for candidate in candidates:
-        stored = state.get(args.mode, candidate.username)
-        retry_limited = args.retry_additional and stored and stored[0] == "account_limited"
-        if getattr(args, "watch", False) or args.recheck or retry_limited or not fresh(stored, args.cache_hours):
-            pending.append(candidate)
-    print(f"Кандидатов: {len(candidates)}; из кэша: {len(candidates)-len(pending)}; к проверке: {len(pending)}.")
+    pending = pending_checks(args, candidates, state)
     if not pending and not getattr(args, "login_only", False):
         return 0
     factory = request_factory(args.mode)
@@ -567,7 +644,7 @@ def nonnegative_float(value):
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Проверка обычных и дополнительных юзернеймов ботов через Telegram MTProto.")
+    parser = argparse.ArgumentParser(description="Проверка юзернеймов ботов через Telegram MTProto или HTTP API Mini App BotFather.")
     parser.add_argument("--companies", type=Path, help="Свой CSV/TXT вместо встроенных списков")
     parser.add_argument("--company", action="append", default=[], help="Отдельная компания; флаг можно повторять")
     parser.add_argument("--suffixes", nargs="+", default=list(DEFAULT_SUFFIXES))
@@ -577,6 +654,9 @@ def main(argv=None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="Только сформировать кандидатов, без Telegram и авторизации")
     parser.add_argument("--export-only", action="store_true", help="Экспортировать сохранённые результаты без сети")
     parser.add_argument("--mode", choices=("bot", "namespace"), default="bot", help="namespace — только общая доступность, без подтверждения для бота")
+    parser.add_argument("--backend", choices=("mtproto", "botfather"), default="mtproto", help="Способ проверки; botfather — HTTP API Mini App из импортированного HAR")
+    parser.add_argument("--botfather-session", type=Path, default=ROOT / "private" / "botfather.json", help="Файл HTTP-сессии BotFather")
+    parser.add_argument("--import-botfather-har", type=Path, metavar="HAR", help="Только импортировать HTTP-сессию из HAR, без проверок имён")
     parser.add_argument("--out", type=Path, default=ROOT / "output")
     parser.add_argument("--session", type=Path, default=ROOT / "private" / "checker")
     parser.add_argument("--proxy", default=os.environ.get("TG_PROXY", ""), metavar="URL",
@@ -595,12 +675,25 @@ def main(argv=None) -> int:
     parser.add_argument("--non-interactive", action="store_true", help="Использовать готовую сессию без запроса телефона/кода")
     parser.add_argument("--login-only", action="store_true", help="Только авторизовать Telegram-сессию, без проверки имён")
     args = parser.parse_args(argv)
+    if args.import_botfather_har:
+        if args.watch or args.login_only or args.dry_run or args.export_only or args.refresh_sources:
+            parser.error("--import-botfather-har выполняется отдельно от проверки, экспорта и входа")
+        from botfather_api import import_har
+        try:
+            import_har(args.import_botfather_har, args.botfather_session)
+        except (ValueError, OSError):
+            print("Не удалось импортировать сессию BotFather. Проверьте HAR с запросом checkBotUsername и доступ к файлу сессии.", file=sys.stderr)
+            return 2
+        print(f"HTTP-сессия BotFather сохранена: {args.botfather_session}. Запросы не отправлялись.")
+        return 0
     try:
         args.proxy = parse_socks5_proxy(args.proxy)
     except ValueError as error:
         parser.error(str(error))
     if args.delay < 3:
         parser.error("--delay должен быть не менее 3 секунд")
+    if args.backend == "botfather" and (args.mode != "bot" or args.login_only):
+        parser.error("--backend botfather совместим только с --mode bot и не использует --login-only")
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit должен быть больше 0")
     args.suffixes = list(dict.fromkeys(s.lower() for s in args.suffixes))
@@ -619,7 +712,7 @@ def main(argv=None) -> int:
         # Protect candidate files and final exports as well as the Telegram session.
         locks.enter_context(process_lock(args.out / ".scan.lock"))
         if not args.dry_run and not args.export_only:
-            locks.enter_context(process_lock(session_lock_path(args.session)))
+            locks.enter_context(process_lock(backend_lock_path(args)))
         args._locks_held = True
         if args.login_only:
             state = State(args.out / "state.sqlite3")

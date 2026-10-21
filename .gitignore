@@ -5,3 +5,4 @@ __pycache__/
 *.session*
 *.sqlite3*
 .env
+*.har

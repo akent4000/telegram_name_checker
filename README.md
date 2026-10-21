@@ -1,13 +1,14 @@
 # Проверка новых юзернеймов Telegram-ботов
 
 Python 3.10+. Скрипт перебирает названия компаний и известные короткие написания,
-добавляет `agent`, `ai`, `app`, `game`, `gay`, `bot` и проверяет доступность через MTProto.
+добавляет `agent`, `ai`, `app`, `game`, `gay`, `bot` и проверяет доступность через MTProto
+или HTTP API Mini App BotFather.
 Для каждого суффикса по умолчанию формируются оба варианта: слитно и с
 подчёркиванием. Например: `appleagent` и `apple_agent`, `appleai` и `apple_ai`,
 `appleapp` и `apple_app`, `applegame` и `apple_game`, `applegay` и `apple_gay`,
 `applebot` и `apple_bot`.
 
-Для новых суффиксов используется **`bots.checkUsername(additional=True)`** из
+В режиме MTProto для новых суффиксов используется **`bots.checkUsername(additional=True)`** из
 актуальной схемы TDLib. Для `bot` и `_bot` используется обычная проверка имени
 бота (без флага `additional`). Скрипт только проверяет имена: не создаёт ботов, не регистрирует
 юзернеймы и не отправляет сообщения BotFather.
@@ -188,6 +189,7 @@ docker compose -f compose.yaml -f compose.external-proxy.yaml down
 | `WEB_HOST` | `127.0.0.1` | Адрес публикации портов Caddy или `web` в режиме внешнего прокси |
 | `CADDY_SITE_ADDRESS` | `:80` | Только Caddy: локальный HTTP либо домен для автоматического HTTPS |
 | `TG_PROXY` | пусто | SOCKS5-прокси для Telegram: `socks5://[user:password@]host:port` |
+| `CHECK_BACKEND` | `mtproto` | `mtproto` либо `botfather` (HTTP-сессия из HAR) |
 | `CHECK_DELAY` | `3` | Минимальная пауза между запросами, не менее 3 с |
 | `CHECK_JITTER` | `0.5` | Дополнительная случайная пауза, с |
 | `RECHECK_HOURS` | `0` | Минимальный возраст повторной проверки; 0 — непрерывные круги |
@@ -196,6 +198,87 @@ docker compose -f compose.yaml -f compose.external-proxy.yaml down
 
 При большом каталоге один круг может занимать больше `RECHECK_HOURS`.
 Настройка не обещает точного расписания: действуют длина очереди и ограничения Telegram.
+
+### Альтернативная проверка через Mini App BotFather
+
+Режим `--backend botfather` использует наблюдаемый в HAR HTTP-запрос:
+
+```http
+POST https://webappinternal.telegram.org/botfather/api?hash=<SESSION_HASH>
+Content-Type: application/x-www-form-urlencoded; charset=UTF-8
+
+username=examplebot&method=checkBotUsername
+```
+
+Это внутренний API Mini App, его формат может измениться. Проверка не создаёт ботов
+и не назначает имена. Только явный JSON-ответ `{"ok":true}` считается `available`;
+ошибка авторизации останавливает проход, неизвестные ответы не считаются свободными.
+Источник проверки записывается в `detail`. Кэш, очередь и сайт общие для обоих способов.
+Для повторной разовой проверки свежего результата используйте `--recheck`.
+
+1. Откройте официальную Mini App `@BotFather` в Telegram Web. В DevTools → Network
+   запишите проверку имени в форме создания, без нажатия кнопки создания бота,
+   и сохраните HAR с содержимым запросов. Он должен содержать POST с
+   `method=checkBotUsername` и URL с `hash`.
+2. Импортируйте сессию на компьютере с Python (запросы при импорте не отправляются):
+
+   ```bash
+   python check_names.py --import-botfather-har web.telegram.org.har
+   ```
+
+   В Windows с виртуальным окружением проекта:
+
+   ```powershell
+   .\.venv\Scripts\python.exe check_names.py --import-botfather-har web.telegram.org.har
+   ```
+
+   Команда сохраняет только URL сессии и cookie, если она есть, в
+   `private/botfather.json`. Она не меняет каталог, результаты и сохранённые паузы.
+   HAR и файлы в `private/` содержат данные доступа; они исключены из Git и Docker-образа.
+3. Для Docker перенесите `private/botfather.json` на сервер в такую же папку проекта
+   (на Linux задайте `chmod 600 private/botfather.json`). В `.env` установите:
+
+   ```dotenv
+   CHECK_BACKEND=botfather
+   TG_PROXY=
+   ```
+
+   Пересоберите и пересоздайте обработчик:
+
+   ```bash
+   docker compose up -d --build worker
+   docker compose logs -f worker
+   ```
+
+   Для внешнего прокси добавляйте `-f compose.yaml -f compose.external-proxy.yaml`
+   перед `up` и `logs`, как в основном разделе запуска. HTTP-режим не требует
+   `TG_API_ID`, `TG_API_HASH` или MTProto-сессии. `TG_PROXY` относится только к MTProto;
+   HTTP-клиент без Docker при необходимости использует стандартную `HTTPS_PROXY`.
+
+Без Docker можно проверить несколько имён:
+
+```bash
+python check_names.py --backend botfather --company Nvidia --suffixes gay --limit 2 --recheck
+```
+
+Эта разовая команда заменяет текущий каталог кандидатов выбранным набором, как и
+обычная проверка с `--company`. Для полного каталога не указывайте `--company` и `--limit`.
+Для непрерывной очереди: `python check_names.py --backend botfather --watch --non-interactive`.
+При запуске без Docker переменная `CHECK_BACKEND` из `.env` не читается — нужен CLI-флаг.
+
+Срок действия HTTP-сессии не гарантирован. После сообщения об истечении экспортируйте
+новый HAR и повторите импорт; worker перечитывает файл при следующем подключении.
+Файл можно выбрать через `--botfather-session PATH`.
+
+Паузы хранятся отдельно для каждого способа в `output/state.sqlite3`: существующий
+`blocked_until` относится к MTProto, а `blocked_until:botfather` — к HTTP API.
+Можно выбрать `botfather` при активной MTProto-паузе; сохранённая MTProto-пауза
+при этом остаётся в базе и действует при возврате к `mtproto`. Сайт показывает
+паузу выбранного обработчиком способа. HTTP API может независимо ограничить запросы.
+HTTP 429 и распознанные сообщения FLOOD сохраняют HTTP-паузу; если сервер не сообщил
+срок, используется `RETRY_DELAY`. Интервал между запросами остаётся не менее 3 секунд.
+Автоматического переключения после FLOOD нет. Задержка формы Mini App в 400 мс
+не является разрешённой частотой массовых проверок.
 
 ### Запуск сайта и очереди без Docker
 

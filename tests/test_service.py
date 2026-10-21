@@ -183,6 +183,20 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(data["queue"][0]["username"], "apple_ai")
         self.assertEqual(self.dashboard.query({"status":"pending", "q":"googleai"})["total"], 1)
 
+    def test_dashboard_uses_active_backend_cooldown(self):
+        self.state.block(1200)
+        native_deadline = self.state.blocked_until()
+        # An old worker record, before the backend field existed, remains MTProto.
+        self.state.worker_status("running", mode="bot")
+        self.assertEqual(self.dashboard.query({})["blocked_until"], native_deadline)
+        self.state.worker_status("running", mode="bot", backend="botfather")
+        self.assertEqual(self.dashboard.query({})["blocked_until"], 0)
+        self.state.block(600, "botfather")
+        http_deadline = self.state.blocked_until("botfather")
+        self.assertEqual(self.dashboard.query({})["blocked_until"], http_deadline)
+        self.state.worker_status("running", mode="bot", backend="mtproto")
+        self.assertEqual(self.dashboard.query({})["blocked_until"], native_deadline)
+
     def test_initialize_imports_existing_csv_without_overwriting_worker_scope(self):
         with tempfile.TemporaryDirectory() as name:
             out = Path(name)

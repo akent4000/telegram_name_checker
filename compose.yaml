@@ -39,6 +39,8 @@ services:
       - check_names.py
       - --watch
       - --non-interactive
+      - --backend
+      - "${CHECK_BACKEND:-mtproto}"
       - --delay
       - "${CHECK_DELAY:-3}"
       - --jitter

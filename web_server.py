@@ -15,7 +15,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
-from check_names import ROOT, DEFAULT_SUFFIXES, Candidate, State, load_companies, make_candidates, positive_float, utc_stamp
+from check_names import ROOT, DEFAULT_SUFFIXES, Candidate, State, cooldown_key, load_companies, make_candidates, positive_float, utc_stamp
 
 STATIC = ROOT / "web"
 STATUSES = {"available", "occupied", "unavailable", "purchase_required", "reserved", "invalid",
@@ -115,13 +115,14 @@ class Dashboard:
             stats = {row["status"]: row["n"] for row in db.execute(cte + "SELECT status, COUNT(*) n FROM data GROUP BY status", [cutoff])}
             queue = [self.serialize(row) for row in db.execute(cte + "SELECT * FROM data ORDER BY COALESCE(checked,0), position LIMIT 8", [cutoff])]
             suffixes = [row[0] for row in db.execute("SELECT DISTINCT suffix FROM candidates ORDER BY suffix")]
-            metadata = dict(db.execute("SELECT key, value FROM metadata WHERE key IN ('worker', 'blocked_until')"))
+            metadata = dict(db.execute("SELECT key, value FROM metadata WHERE key IN ('worker', 'blocked_until', 'blocked_until:botfather')"))
             worker = json.loads(metadata.get("worker", "null"))
+            backend = worker.get("backend", "mtproto") if worker else "mtproto"
             if worker and worker["status"] != "stopped" and time.time() - worker["updated"] > 180:
                 worker["status"] = "offline"
             return {"items": rows, "total": total, "page": page, "per_page": per_page,
                     "stats": stats, "queue": queue, "suffixes": suffixes, "worker": worker,
-                    "blocked_until": float(metadata.get("blocked_until", 0)),
+                    "blocked_until": float(metadata.get(cooldown_key(backend), 0)),
                     "cache_hours": self.cache_hours, "updated_at": utc_stamp()}
         finally:
             db.close()
